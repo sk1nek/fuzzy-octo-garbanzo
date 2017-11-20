@@ -3,6 +3,7 @@ package webspider;
 import jdk.incubator.http.HttpClient;
 import jdk.incubator.http.HttpRequest;
 import jdk.incubator.http.HttpResponse;
+import org.apache.commons.validator.routines.UrlValidator;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -11,21 +12,20 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import java.util.Queue;
-import java.util.concurrent.*;
 
 public class ParserManager{
 
-    private Queue<String> queue = new ArrayBlockingQueue(256);
+    private final String[] validatorSchemes = {"http", "https"};
 
-    private ConcurrentHashMap<String, Integer> results = new ConcurrentHashMap<>();
+    private HashSet<String> results = new HashSet<>();
 
     private static ParserManager instance;
-
-    private ExecutorService threadPool;
+    private static ExecutorService threadPool;
+    private static UrlValidator validator;
 
     public static ParserManager getInstance() {
         if(instance == null)
@@ -35,36 +35,15 @@ public class ParserManager{
 
     private ParserManager(){
         threadPool = Executors.newFixedThreadPool(4);
-
+        validator = new UrlValidator(validatorSchemes);
     }
 
-    public void addToQueue(String s){
-        queue.add(s);
-    }
-
-    public void addToQueue(Collection<String> collection){
-        queue.addAll(collection);
-    }
-
-    void addResult(String url){
-        results.put(url, 1);
-    }
-
-    HashMap<String, Integer> getResults() {
-        HashMap<String, Integer> ret = new HashMap<>(results.size());
-        ret.putAll(results);
-        return ret;
-    }
-
-    public void executeQueue(){
-
-        while(!queue.isEmpty()){
-            threadPool.execute(new DocumentParser(queue.remove()));
-
+    public void scheduleParsing(String s){
+        if (!results.contains(s)) {
+            threadPool.execute(new DocumentParser(s));
         }
 
     }
-
 
     class DocumentParser implements Runnable{
 
@@ -85,17 +64,14 @@ public class ParserManager{
 
                 for(Element el : links){
                     String s = el.attr("href");
-                    if (s != null && ((s.contains("http://")) || s.contains("https://"))) {
-                        System.out.println(s);
-                        addResult(s);
-                        queue.add(s);
+                    if (validator.isValid(s)) {
+                        results.add(s);
+                        scheduleParsing(s);
                     }
                 }
-
             }catch(Exception ex){
                 ex.printStackTrace();
             }
-            executeQueue();
         }
 
         private Document getDocumentFromUrl(String url) throws URISyntaxException, InterruptedException, IOException {
