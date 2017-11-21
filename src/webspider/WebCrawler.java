@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class ParserManager{
+public class WebCrawler {
 
     private final long PARSING_TIMEOUT = 5000L; //If no new content is added to Collections during this interval, program begins to close.
     private long freshContentTimestamp = 0;
@@ -29,23 +29,23 @@ public class ParserManager{
     private HashSet<String> links = new HashSet<>(); //every "href" from html body
     private HashSet<String> imgs = new HashSet<>(); //every "img src" from html body
 
-    private static ParserManager instance;
+    private static WebCrawler instance;
     private static ExecutorService threadPool;
     private static UrlValidator validator;
 
     private Thread freshContentWarden;
 
     /**
-     * Returns ParserManager singleton instance, calls constructor if null.
+     * Returns WebCrawler singleton instance, calls constructor if null.
      *
      */
-    static ParserManager getInstance() {
+    static WebCrawler getInstance() {
         if(instance == null)
-            instance = new ParserManager();
+            instance = new WebCrawler();
         return instance;
     }
     
-    private ParserManager(){
+    private WebCrawler(){
         threadPool = Executors.newFixedThreadPool(4);
         String[] validatorSchemes = {"http", "https"};
         validator = new UrlValidator(validatorSchemes);
@@ -134,7 +134,7 @@ public class ParserManager{
                 for(Element el : aElems){
                     String s = el.attr("href");
                     if (validator.isValid(s)) {
-                        ParserManager.this.links.add(s);
+                        WebCrawler.this.links.add(s);
                         scheduleParsing(s);
                     }
                 }

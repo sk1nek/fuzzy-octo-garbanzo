@@ -6,7 +6,6 @@ public class Main {
 
     private static String initialURL;
 
-
     public static void main(String[] args) {
 
         UrlValidator urlValidator = new UrlValidator();
@@ -15,8 +14,7 @@ public class Main {
             return;
         }
 
-        ParserManager pm = ParserManager.getInstance();
-        pm.scheduleParsing(args[0]);
+        WebCrawler.getInstance().scheduleParsing(args[0]);
 
     }
 }
