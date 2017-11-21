@@ -23,13 +23,11 @@ import java.util.concurrent.Executors;
 
 public class ParserManager{
 
-    private final long PARSING_TIMEOUT = 5000L;
+    private final long PARSING_TIMEOUT = 5000L; //If no new content is added to Collections during this interval, program begins to close.
     private long freshContentTimestamp = 0;
 
-    private final String[] validatorSchemes = {"http", "https"};
-
-    private HashSet<String> links = new HashSet<>();
-    private HashSet<String> imgs = new HashSet<>();
+    private HashSet<String> links = new HashSet<>(); //every "href" from html body
+    private HashSet<String> imgs = new HashSet<>(); //every "img src" from html body
 
     private static ParserManager instance;
     private static ExecutorService threadPool;
@@ -37,14 +35,19 @@ public class ParserManager{
 
     private Thread freshContentWarden;
 
-    public static ParserManager getInstance() {
+    /**
+     * Returns ParserManager singleton instance, calls constructor if null.
+     *
+     */
+    static ParserManager getInstance() {
         if(instance == null)
             instance = new ParserManager();
         return instance;
     }
-
+    
     private ParserManager(){
         threadPool = Executors.newFixedThreadPool(4);
+        String[] validatorSchemes = {"http", "https"};
         validator = new UrlValidator(validatorSchemes);
 
         freshContentWarden = new Thread(() -> {
@@ -63,19 +66,24 @@ public class ParserManager{
         });
     }
 
-    public void scheduleParsing(String s){
+    /**
+     *Starts warden thread. If provided url hasn't been parsed yet, new DocumentParser is created and added to executors queue.
+     * 
+     * @param url URL to be parsed
+     */
+    void scheduleParsing(String url){
         if(!freshContentWarden.isAlive())
             freshContentWarden.start();
-        if (!links.contains(s)) {
-            threadPool.execute(new DocumentParser(s));
+        if (!links.contains(url)) {
+            threadPool.execute(new DocumentParser(url));
             freshContentTimestamp = System.currentTimeMillis();
         }
-        System.out.println("Scheduling parse of " + s);
-
     }
 
+    /**
+     * Writes output to files and sends exit signal to runtime
+     */
     private void closingSequence(){
-
 
         writeCollectionToFile("links.txt", links);
         System.out.println("Printed links to links.txt");
@@ -86,6 +94,11 @@ public class ParserManager{
         Runtime.getRuntime().exit(0);
     }
 
+    /**
+     *
+     * @param fileName - output file name
+     * @param col Collection
+     */
     private void writeCollectionToFile(String fileName, Collection<String> col){
         try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName)))) {
             for(String s: col){
@@ -97,6 +110,10 @@ public class ParserManager{
         }
     }
 
+    /**
+     *  Runnable implementation meant to provide an elegant way of getting URLs from html bodies.
+     *  Constructor String parameter is url of html body to be parsed.
+     */
     class DocumentParser implements Runnable{
 
         private String url;
@@ -132,6 +149,14 @@ public class ParserManager{
             }
         }
 
+        /**
+         *
+         * @param url Location of HTML body to download
+         * @return JSoup Document class member containing unparsed HTML body.
+         * @throws URISyntaxException
+         * @throws InterruptedException
+         * @throws IOException
+         */
         private Document getDocumentFromUrl(String url) throws URISyntaxException, InterruptedException, IOException {
 
             HttpClient httpClient = HttpClient.newHttpClient();
@@ -141,13 +166,7 @@ public class ParserManager{
             return Jsoup.parse(httpResponse.body());
 
         }
-
     }
-
-
-
-
-
 
 }
 
