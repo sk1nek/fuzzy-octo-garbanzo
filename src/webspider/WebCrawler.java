@@ -143,9 +143,6 @@ public class WebCrawler {
          *
          * @param url Location of HTML body to download
          * @return JSoup Document class member containing unparsed HTML body.
-         * @throws URISyntaxException
-         * @throws InterruptedException
-         * @throws IOException
          */
         private Document getDocumentFromUrl(String url) throws URISyntaxException, InterruptedException, IOException {
 
