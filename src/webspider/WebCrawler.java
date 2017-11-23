@@ -29,23 +29,13 @@ public class WebCrawler {
     private HashSet<String> links = new HashSet<>(); //every "href" from html body
     private HashSet<String> imgs = new HashSet<>(); //every "img src" from html body
 
-    private static WebCrawler instance;
-    private static ExecutorService threadPool;
-    private static UrlValidator validator;
+    private  WebCrawler instance;
+    private  ExecutorService threadPool;
+    private  UrlValidator validator;
 
     private Thread freshContentWarden;
 
-    /**
-     * Returns WebCrawler singleton instance, calls constructor if null.
-     *
-     */
-    static WebCrawler getInstance() {
-        if(instance == null)
-            instance = new WebCrawler();
-        return instance;
-    }
-    
-    private WebCrawler(){
+    public WebCrawler(){
         threadPool = Executors.newFixedThreadPool(4);
         String[] validatorSchemes = {"http", "https"};
         validator = new UrlValidator(validatorSchemes);
